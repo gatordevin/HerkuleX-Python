@@ -1,5 +1,7 @@
+
 import serial
 import time
+currentAngle = 0
 servoID = 219
 baudRate = 115200
 port ="COM5"
@@ -34,11 +36,20 @@ def torque_off():
 
 
 def move_to_angle(angle):  # recommended range is within 0 - 300 deg
+    currentAngle = angle
     position = int((angle*35.9971202) + 9903)
-    pos_LSB = position & 0xFF
-    pos_MSB = (position & 0xFF00) >> 8
-    led = 8 # green*4 + blue*8 + red*16
-    playtime = 0x3C # execution time
+    led = 8  # green*4 + blue*8 + red*16
+    playtime = 0x5C  # execution time
+    if currentAngle != 0:
+        pos_LSB = 0 & 0xFF
+        pos_MSB = (0 & 0xFF00) >> 8
+        send_cmd(0x05, [pos_LSB, pos_MSB, led, servoID, playtime])
+        currentAngle = 0
+    else:
+        pos_LSB = position & 0xFF
+        pos_MSB = (position & 0xFF00) >> 8
+        send_cmd(0x05, [pos_LSB, pos_MSB, led, servoID, playtime])
+
     send_cmd(0x05, [pos_LSB, pos_MSB, led, servoID, playtime])
 
 
@@ -64,10 +75,11 @@ def close():
 
 
 torque_on()
-time.sleep(1)
-move_to_angle(90)
-time.sleep(1)
 move_to_angle(0)
+time.sleep(1)
+move_to_angle(360)
+time.sleep(1)
+move_to_angle(-265)
 time.sleep(1)
 torque_off()
 reboot()
