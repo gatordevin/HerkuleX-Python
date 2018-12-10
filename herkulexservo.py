@@ -1,11 +1,10 @@
-
 import serial
 import time
 currentAngle = 0
 servoID = 219
 baudRate = 115200
-port ="COM5"
-ser = serial.Serial("COM5", baudRate, timeout=0.1)
+port ="/dev/ttyUSB0"
+ser = serial.Serial(port, baudRate, timeout=0.1)
 
 
 def send_cmd(cmd, data):
@@ -35,23 +34,13 @@ def torque_off():
     send_cmd(0x03, [0x34, 0x01, 0x40])
 
 
-def move_to_angle(angle):  # recommended range is within 0 - 300 deg
-    currentAngle = angle
+def move_to_angle(angle):  # 635 -265
     position = int((angle*35.9971202) + 9903)
     led = 8  # green*4 + blue*8 + red*16
-    playtime = 0x5C  # execution time
-    if currentAngle != 0:
-        pos_LSB = 0 & 0xFF
-        pos_MSB = (0 & 0xFF00) >> 8
-        send_cmd(0x05, [pos_LSB, pos_MSB, led, servoID, playtime])
-        currentAngle = 0
-    else:
-        pos_LSB = position & 0xFF
-        pos_MSB = (position & 0xFF00) >> 8
-        send_cmd(0x05, [pos_LSB, pos_MSB, led, servoID, playtime])
-
+    playtime = 0xFF  # execution time
+    pos_LSB = position & 0xFF
+    pos_MSB = (position & 0xFF00) >> 8
     send_cmd(0x05, [pos_LSB, pos_MSB, led, servoID, playtime])
-
 
 def set_speed(speed):
     goalSpeedSign = 0
@@ -63,7 +52,7 @@ def set_speed(speed):
     speed_LSB = goalSpeedSign & 0xFF
     speed_MSB = (goalSpeedSign & 0xFF00) >> 8
     led = 4 # green*4 + blue*8 + red*16
-    playtime = 0x3C # execution time
+    playtime = 0x9F # execution time
     send_cmd(0x05, [speed_LSB, speed_MSB, led, servoID, playtime])
 
 def reboot():
@@ -73,14 +62,30 @@ def reboot():
 def close():
     ser.close()
 
-
+def moveAngle(angle):
+    global currentAngle
+    if abs(currentAngle + angle) != abs(currentAngle) + abs(angle):
+	move_to_angle(0)
+	#time.sleep(1)
+	move_to_angle(angle)
+	
+	print currentAngle
+	print angle
+	currentAngle = angle
+    else:
+	move_to_angle(angle)
+	
+	print currentAngle
+	print angle
+	currentAngle = angle
 torque_on()
-move_to_angle(0)
-time.sleep(1)
-move_to_angle(360)
-time.sleep(1)
-move_to_angle(-265)
-time.sleep(1)
+moveAngle(0)
+#time.sleep(4)
+moveAngle(635)
+#time.sleep(6)
+moveAngle(-265)
+time.sleep(6)
+#move_to_angle(-265)
+#time.sleep(1)
 torque_off()
-reboot()
 close()
